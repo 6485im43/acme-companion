@@ -8,6 +8,7 @@ ACME_CA_URI="${ACME_CA_URI:-"https://acme-v02.api.letsencrypt.org/directory"}"
 ACME_CA_TEST_URI="https://acme-staging-v02.api.letsencrypt.org/directory"
 DEFAULT_KEY_SIZE="${DEFAULT_KEY_SIZE:-4096}"
 RENEW_PRIVATE_KEYS="$(lc "${RENEW_PRIVATE_KEYS:-true}")"
+ACME_DNS_PROVIDER="${ACME_DNS_PROVIDER}"
 
 # Backward compatibility environment variable
 REUSE_PRIVATE_KEYS="$(lc "${REUSE_PRIVATE_KEYS:-false}")"
@@ -327,8 +328,13 @@ function update_cert {
 
     params_issue_arr=("${params_base_arr[@]}" "${params_issue_arr[@]}")
     [[ "$DEBUG" == 1 ]] && echo "Calling acme.sh --issue with the following parameters : ${params_issue_arr[*]}"
-    echo "Creating/renewal $base_domain certificates... (${hosts_array[*]})"
-    acme.sh --issue "${params_issue_arr[@]}"
+    if [[ $ACME_DNS_PROVIDER == "" ]]; then
+        echo "Creating/renewal $base_domain certificates... (${hosts_array[*]})"
+        acme.sh --issue "${params_issue_arr[@]}"
+    else
+        echo "Creating/renewal $base_domain certificates... (${hosts_array[*]}) using dns challenge"
+        acme.sh --dns $ACME_DNS_PROVIDER --issue "${params_issue_arr[@]}"
+    fi
 
     local acmesh_return=$?
 
